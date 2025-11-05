@@ -1,0 +1,177 @@
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./.minio:/data
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  documents:
+    build:
+      context: .
+      dockerfile: services/documents/Dockerfile
+    environment:
+      DOCS_PORT: 8001
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: documents
+      ALLOWED_ORIGINS: "http://localhost:8501,http://localhost:3000"
+    ports:
+      - "8001:8001"
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  extract_validate:
+    build:
+      context: .
+      dockerfile: services/extract_validate/Dockerfile
+    environment:
+      PORT: 8002
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: documents
+      RESUME_MODEL: gpt-3.5-turbo   # or "ollama:llama3.2:3b-instruct"
+      LLM_ENDPOINT: http://ollama:11434     # <— IMPORTANT
+    ports:
+      - "8002:8002"
+    depends_on:
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_started  
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  ollama:
+    image: ollama/ollama:latest
+    # Grant GPU to the container
+    deploy:
+     resources:
+       reservations:
+         devices:
+           - capabilities: ["gpu"]   
+    environment:
+      # Keep models hot in memory for speed (tune as needed)
+      OLLAMA_NUM_PARALLEL: "2"          # parallel requests
+      OLLAMA_MAX_LOADED_MODELS: "2"     # keep multiple models loaded if you use more than one
+      OLLAMA_KEEP_ALIVE: "5m"           # keep model in VRAM/RAM after last request
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./.ollama:/root/.ollama
+  llm_runtime:
+    build:
+      context: .
+      dockerfile: services/llm_runtime/Dockerfile
+    environment:
+      LLMR_PORT: 51051
+      DEFAULT_PROVIDER: openai   #or Olama
+      DEFAULT_MODEL: gpt-3.5-turbo
+      OPENAI_API_KEY: ${OPENAI_API_KEY}     # set in your host env or .env
+      OPENAI_BASE_URL: https://api.openai.com/v1
+      OLLAMA_ENDPOINT: http://ollama:11434
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: https://cloud.langfuse.com
+    ports:
+      - "51051:51051"
+    depends_on:
+      - ollama      
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports: ["27017:27017"]
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator/Dockerfile
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: appdb
+    depends_on: [mongo]
+    ports: ["8010:8010"]      
+  score:
+    build:
+      context: .
+      dockerfile: services/score/Dockerfile
+    environment:
+      SCORE_MODEL_DIR: /app/models/eligibility_v1
+      SCORE_PORT: 8004
+    ports:
+      - "8004:8004"
+  ui:
+    build:
+      context: .
+      dockerfile: services/ui/Dockerfile
+    env_file:
+      - .env
+    environment:
+      # ensure Streamlit picks the same port as your host mapping
+      STREAMLIT_SERVER_PORT: "${UI_PORT}"
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "${STREAMLIT_BROWSER_GATHER_USAGE_STATS:-false}"
+      # Override if you want, but defaults in Dockerfile are fine:
+      DOCS_BASE_URL: "http://documents:8001"
+      EV_BASE_URL: "http://extract_validate:8002"
+      ORCH_BASE_URL: "http://orchestrator:8010"
+    ports:
+      - "8501:8501"
+    depends_on:
+      - documents
+      - extract_validate
+      - orchestrator    
+  recommend:
+    build: ./services/recommend
+    image: ai-support/recommend:${TAG:-latest}
+    environment:
+      RECO_TAXONOMY_PATH: /app/data/taxonomy.json
+      RECO_LLM_RUNTIME_ADDR: llm_runtime:51051      # keep if you want LLM polish
+      RECO_LLM_MODEL: ""                            # e.g. "llama3.1" to enable polish
+      RECO_LOG_LEVEL: info
+    depends_on:
+      llm_runtime:
+        condition: service_started                  # remove if you don't use LLM polish
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0) if urllib.request.urlopen(\"http://localhost:8006/healthz\").status==200 else sys.exit(1)'"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    ports:
+      - "8006:8006"                                

@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResumeExtraction",
+  "type": "object",
+  "properties": {
+    "name": { "type": ["string","null"] },
+    "contact": {
+      "type": ["object","null"],
+      "properties": {
+        "email": { "type": ["string","null"] },
+        "phone": { "type": ["string","null"] },
+        "location": { "type": ["string","null"] },
+        "linkedin": { "type": ["string","null"] },
+        "github": { "type": ["string","null"] },
+        "website": { "type": ["string","null"] }
+      }
+    },
+    "summary": { "type": ["string","null"] },
+    "experience": {
+      "type": ["array","null"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "company": { "type": ["string","null"] },
+          "title": { "type": ["string","null"] },
+          "employment_type": { "type": ["string","null"], "enum": ["full-time","part-time","contract","internship","freelance","unknown",null] },
+          "start_date": { "type": ["string","null"], "description": "ISO yyyy-mm or yyyy-mm-dd" },
+          "end_date": { "type": ["string","null"] },
+          "is_current": { "type": ["boolean","null"] },
+          "location": { "type": ["string","null"] },
+          "industry": { "type": ["string","null"] },
+          "team_size_managed": { "type": ["integer","null"] },
+          "skills_used": { "type": ["array","null"], "items": { "type": "string" } },
+          "achievements": {
+            "type": ["array","null"],
+            "items": {
+              "type":"object",
+              "properties": {
+                "statement": { "type": ["string","null"] },
+                "metric": { "type": ["string","number","null"] },
+                "impact_area": { "type": ["string","null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "education": {
+      "type":["array","null"],
+      "items":{
+        "type":"object",
+        "properties":{
+          "degree": {"type":["string","null"]},
+          "field": {"type":["string","null"]},
+          "institution": {"type":["string","null"]},
+          "start_date": {"type":["string","null"]},
+          "end_date": {"type":["string","null"]}
+        }
+      }
+    },
+    "skills": {
+      "type":["object","null"],
+      "properties":{
+        "hard": { "type":["array","null"], "items":{"type":"string"} },
+        "soft": { "type":["array","null"], "items":{"type":"string"} },
+        "tools": { "type":["array","null"], "items":{"type":"string"} },
+        "languages": {
+          "type":["array","null"],
+          "items":{
+            "type":"object",
+            "properties":{
+              "name":{"type":["string","null"]},
+              "proficiency":{"type":["string","null"],"enum":["basic","intermediate","advanced","native",null]}
+            }
+          }
+        }
+      }
+    },
+    "certifications": { "type":["array","null"], "items":{"type":"string"} },
+    "projects": {
+      "type":["array","null"],
+      "items":{
+        "type":"object",
+        "properties":{
+          "name":{"type":["string","null"]},
+          "description":{"type":["string","null"]},
+          "tech":{"type":["array","null"],"items":{"type":"string"}},
+          "links":{"type":["array","null"],"items":{"type":"string"}}
+        }
+      }
+    },
+    "publications": { "type":["array","null"], "items":{"type":"string"} },
+    "awards": { "type":["array","null"], "items":{"type":"string"} },
+    "volunteering": { "type":["array","null"], "items":{"type":"string"} },
+    "availability": {
+      "type":["object","null"],
+      "properties":{
+        "notice_period_days":{"type":["integer","null"]},
+        "earliest_start_date":{"type":["string","null"]}
+      }
+    },
+    "work_preferences": {
+      "type":["object","null"],
+      "properties":{
+        "remote":{"type":["boolean","null"]},
+        "hybrid":{"type":["boolean","null"]},
+        "onsite":{"type":["boolean","null"]},
+        "relocation":{"type":["boolean","null"]}
+      }
+    },
+    "visa_right_to_work": {
+      "type":["object","null"],
+      "properties":{
+        "country":{"type":["string","null"]},
+        "status":{"type":["string","null"]}
+      }
+    },
+    "derived": {
+      "type":["object","null"],
+      "properties":{
+        "years_experience_total":{"type":["number","null"]},
+        "seniority_level":{"type":["string","null"],"enum":["junior","mid","senior","staff","principal","director","vp","cxo","unknown",null]},
+        "employment_current":{"type":["boolean","null"]},
+        "latest_tenure_months":{"type":["integer","null"]},
+        "largest_team_managed":{"type":["integer","null"]},
+        "primary_industries":{"type":["array","null"],"items":{"type":"string"}},
+        "skills_top":{"type":["array","null"],"items":{"type":"string"}},
+        "employment_gaps":{
+          "type":["array","null"],
+          "items":{
+            "type":"object",
+            "properties":{
+              "start":{"type":["string","null"]},
+              "end":{"type":["string","null"]},
+              "days":{"type":["integer","null"]}
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

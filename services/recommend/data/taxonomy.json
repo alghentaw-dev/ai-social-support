@@ -1,0 +1,90 @@
+{
+  "roles": [
+    {
+      "name": "Data Analyst",
+      "core_skills": [
+        "python",
+        "sql",
+        "excel",
+        "statistics",
+        "dashboards"
+      ],
+      "nice_to_have": [
+        "powerbi",
+        "tableau",
+        "pandas"
+      ],
+      "programs": [
+        {
+          "name": "Intro to SQL",
+          "provider": "Coursera",
+          "duration_weeks": 4,
+          "skills_focus": [
+            "sql"
+          ]
+        },
+        {
+          "name": "Data Analysis with Python",
+          "provider": "edX",
+          "duration_weeks": 6,
+          "skills_focus": [
+            "python",
+            "pandas"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Backend Engineer",
+      "core_skills": [
+        "python",
+        "apis",
+        "fastapi",
+        "databases",
+        "git"
+      ],
+      "nice_to_have": [
+        "docker",
+        "kubernetes",
+        "grpc"
+      ],
+      "programs": [
+        {
+          "name": "FastAPI Bootcamp",
+          "provider": "Udemy",
+          "duration_weeks": 3,
+          "skills_focus": [
+            "fastapi",
+            "apis"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ML Engineer",
+      "core_skills": [
+        "python",
+        "numpy",
+        "pandas",
+        "mlops",
+        "modeling"
+      ],
+      "nice_to_have": [
+        "docker",
+        "kubernetes",
+        "ray",
+        "shap"
+      ],
+      "programs": [
+        {
+          "name": "MLOps Fundamentals",
+          "provider": "Coursera",
+          "duration_weeks": 5,
+          "skills_focus": [
+            "mlops"
+          ]
+        }
+      ]
+    }
+  ]
+}

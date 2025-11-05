@@ -1,0 +1,124 @@
+{
+  "info": {
+    "name": "AI Social Support - Score Service",
+    "_postman_id": "df7f6c8d-8b4b-4d42-a6d1-mlscore",
+    "description": "Postman collection for the unified ML Scoring microservice (/train, /score, /explain, /thresholds).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8004/healthz",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8004",
+          "path": ["healthz"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Train Model",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "training_features_sample.csv"
+            },
+            {
+              "key": "version",
+              "value": "",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:8004/train",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8004",
+          "path": ["train"]
+        },
+        "description": "Upload a CSV to train a new eligibility model. Returns ROC AUC and model info."
+      },
+      "response": []
+    },
+    {
+      "name": "Score Application",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eid\": \"784198765432101\",\n  \"declared_monthly_income\": 4500,\n  \"family_size\": 4,\n  \"employment_status\": \"Employed\",\n  \"avg_monthly_income\": 4800,\n  \"avg_monthly_expenses\": 3200,\n  \"credit_score\": 650,\n  \"total_debt\": 10000,\n  \"asset_value\": 20000,\n  \"liabilities_value\": 12000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8004/score",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8004",
+          "path": ["score"]
+        },
+        "description": "Score a single applicant using the latest trained model. Returns probability, decision, and thresholds."
+      },
+      "response": []
+    },
+    {
+      "name": "Explain Decision (SHAP)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eid\": \"784198765432101\",\n  \"declared_monthly_income\": 4500,\n  \"family_size\": 4,\n  \"employment_status\": \"Employed\",\n  \"avg_monthly_income\": 4800,\n  \"avg_monthly_expenses\": 3200,\n  \"credit_score\": 650,\n  \"total_debt\": 10000,\n  \"asset_value\": 20000,\n  \"liabilities_value\": 12000\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8004/explain",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8004",
+          "path": ["explain"]
+        },
+        "description": "Generate SHAP local feature explanation for the applicant."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Thresholds",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8004/thresholds",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8004",
+          "path": ["thresholds"]
+        },
+        "description": "Fetch the current approve/review thresholds from the latest model."
+      },
+      "response": []
+    }
+  ],
+  "protocolProfileBehavior": {}
+}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package llmruntime.v1;
+
+// A simple, provider-agnostic LLM gateway.
+service LlmRuntime {
+  rpc Generate(GenerateRequest) returns (GenerateResponse);
+  rpc GenerateStream(GenerateRequest) returns (stream GenerateChunk);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message GenerateRequest {
+  string model = 1;
+  string prompt = 2;
+  string system = 3;
+  map<string, string> options = 4;
+  bool json_mode = 5;
+  string json_schema = 6;
+  int32 max_tokens = 7;
+  float temperature = 8;
+  string user_id = 9;
+  string request_id = 10;
+  int32 timeout_ms = 11;
+}
+
+message GenerateResponse {
+  string text = 1;
+  string model = 2;
+  string provider = 3;
+  string finish_reason = 4;
+  string request_id = 5;
+}
+
+message GenerateChunk {
+  string delta = 1;
+  string model = 2;
+  string provider = 3;
+  bool done = 4;
+  string finish_reason = 5;
+}
+
+message HealthRequest {}
+message HealthResponse {
+  string status = 1;
+  string provider_default = 2;
+  string model_default = 3;
+}

@@ -1,0 +1,418 @@
+{
+  "info": {
+    "_postman_id": "5aff7a1d-cea7-4e4b-abf9-0984b897b373",
+    "name": "AI Social Support - Docs, E&V, Orchestrator",
+    "description": "End-to-end test for Document Service (MinIO), Extraction & Validation Service, and Orchestrator Service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "3487740"
+  },
+  "item": [
+    {
+      "name": "Documents /healthz",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_docs}}/healthz",
+          "host": [
+            "{{base_url_docs}}"
+          ],
+          "path": [
+            "healthz"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Documents /ingest (multipart)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let body = pm.response.json();",
+              "if (body && body.documents) {",
+              "  pm.collectionVariables.set('documents_json', JSON.stringify(body.documents));",
+              "  // Convenience: also set doc_object_key of first doc",
+              "  if (body.documents.length) {",
+              "    pm.collectionVariables.set('doc_object_key', body.documents[0].object_key);",
+              "    pm.collectionVariables.set('doc_doc_type', body.documents[0].doc_type);",
+              "  }",
+              "}",
+              "",
+              "pm.test('Documents ingested', function () {",
+              "    pm.expect(body).to.have.property('documents');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "application_id",
+              "value": "{{application_id}}",
+              "type": "text"
+            },
+            {
+              "key": "files",
+              "src": "C:/tmp/bank_statement.pdf",
+              "type": "file"
+            },
+            {
+              "key": "doc_types",
+              "value": "bank_statement",
+              "type": "text"
+            },
+            {
+              "key": "files",
+              "src": "C:/tmp/emirates_id_front.jpg",
+              "type": "file"
+            },
+            {
+              "key": "doc_types",
+              "value": "emirates_id",
+              "type": "text"
+            },
+            {
+              "key": "files",
+              "src": "C:/tmp/assets_liabilities.xlsx",
+              "type": "file"
+            },
+            {
+              "key": "doc_types",
+              "value": "assets_liabilities",
+              "type": "text"
+            },
+            {
+              "key": "files",
+              "src": "C:/tmp/credit_report.pdf",
+              "type": "file"
+            },
+            {
+              "key": "doc_types",
+              "value": "credit_report",
+              "type": "text"
+            },
+            {
+              "key": "files",
+              "src": "C:/tmp/resume.txt",
+              "type": "file"
+            },
+            {
+              "key": "doc_types",
+              "value": "resume",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url_docs}}/ingest",
+          "host": [
+            "{{base_url_docs}}"
+          ],
+          "path": [
+            "ingest"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "E&V /healthz",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_ev}}/healthz",
+          "host": [
+            "{{base_url_ev}}"
+          ],
+          "path": [
+            "healthz"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "E&V /extract/batch",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const appId = pm.collectionVariables.get('application_id');",
+              "const form = JSON.parse(pm.collectionVariables.get('form_json')) || {};",
+              "const docs = JSON.parse(pm.collectionVariables.get('documents_json') || '[]');",
+              "",
+              "// Build request body dynamically. You can also tweak eid_raw/resume_raw here.",
+              "const body = {",
+              "  application_id: appId,",
+              "  form: form,",
+              "  documents: docs,",
+              "  eid_raw: {",
+              "    eid_number: form.applicant_eid || '784198765432101',",
+              "    name_en: form.full_name || 'Mohammed Ali',",
+              "    dob: form.dob || '1992-01-01',",
+              "    nationality: form.nationality || 'Syria',",
+              "    expiry_date: '2030-12-31',",
+              "    gender: 'M',",
+              "    address: form.address || 'Dubai',",
+              "    marital_status: form.marital_status || 'married'",
+              "  },",
+              "  resume_raw: {",
+              "    summary: 'Senior Software Engineer with experience in AI and backend systems',",
+              "    skills: ['python', 'fastapi', 'ml', 'llm'],",
+              "    years_of_experience: 9,",
+              "    current_employment_status: form.employment_status || 'employed'",
+              "  }",
+              "};",
+              "",
+              "pm.collectionVariables.set('extract_body', JSON.stringify(body));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.test('Got extract results array', function(){",
+              "  pm.expect(Array.isArray(res)).to.be.true;",
+              "});",
+              "",
+              "// Build facts_by_doc map { doc_type: facts } for /validate",
+              "const factsByDoc = {};",
+              "if (Array.isArray(res)) {",
+              "  for (const item of res) {",
+              "    if (item && item.doc_type && item.facts) {",
+              "      factsByDoc[item.doc_type] = item.facts;",
+              "    }",
+              "  }",
+              "}",
+              "pm.collectionVariables.set('facts_by_doc_json', JSON.stringify(factsByDoc));",
+              "pm.test('Saved facts_by_doc_json', function(){ pm.expect(true).to.be.true; });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{extract_body}}"
+        },
+        "url": {
+          "raw": "{{base_url_ev}}/extract/batch",
+          "host": [
+            "{{base_url_ev}}"
+          ],
+          "path": [
+            "extract",
+            "batch"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "E&V /validate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"application_id\": \"{{application_id}}\",\n  \"form\": {{form_json}},\n  \"facts_by_doc\": {{facts_by_doc_json}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url_ev}}/validate",
+          "host": [
+            "{{base_url_ev}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Orchestrator /health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_orch}}/health",
+          "host": [
+            "{{base_url_orch}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Orchestrator /applications/draft",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicant\": {\n    \"emirates_id\": \"{{applicant_eid}}\",\n    \"name\": {\n      \"first_name\": \"Mohammed\",\n      \"father_name\": \"Ali\",\n      \"mother_name\": \"Fatima\",\n      \"last_name\": \"Alghentawi\",\n      \"full_en\": \"{{full_name}}\"\n    },\n    \"dob\": \"1992-01-01\",\n    \"nationality\": \"Syria\",\n    \"gender\": \"M\",\n    \"address\": \"Dubai, UAE\",\n    \"marital_status\": \"married\",\n    \"region_emirate\": \"Dubai\"\n  },\n  \"form\": {{form_json}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url_orch}}/applications/draft",
+          "host": [
+            "{{base_url_orch}}"
+          ],
+          "path": [
+            "applications",
+            "draft"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Orchestrator /applications/{eid}/attach-extracts",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"application_id\": \"{{application_id}}\",\n  \"extracts\": {{extracts_array_json}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url_orch}}/applications/{{applicant_eid}}/attach-extracts",
+          "host": [
+            "{{base_url_orch}}"
+          ],
+          "path": [
+            "applications",
+            "{{applicant_eid}}",
+            "attach-extracts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Orchestrator /applications (list)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_orch}}/applications",
+          "host": [
+            "{{base_url_orch}}"
+          ],
+          "path": [
+            "applications"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Orchestrator /applications/{eid}/details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url_orch}}/applications/{{applicant_eid}}/details",
+          "host": [
+            "{{base_url_orch}}"
+          ],
+          "path": [
+            "applications",
+            "{{applicant_eid}}",
+            "details"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url_docs",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "base_url_ev",
+      "value": "http://localhost:8002"
+    },
+    {
+      "key": "application_id",
+      "value": "app-12345"
+    },
+    {
+      "key": "form_json",
+      "value": "{\"full_name\": \"Mohammed Ali\", \"dob\": \"1992-01-01\", \"nationality\": \"Syria\", \"address\": \"Dubai\", \"marital_status\": \"married\", \"household_size\": 3, \"employment_status\": \"employed\", \"declared_monthly_income\": 12000, \"housing_type\": \"rent\", \"dependents_count\": 1, \"region_emirate\": \"Dubai\", \"applicant_eid\": \"{{applicant_eid}}\"}"
+    },
+    {
+      "key": "documents_json",
+      "value": "[]"
+    },
+    {
+      "key": "facts_by_doc_json",
+      "value": "{}"
+    },
+    {
+      "key": "doc_object_key",
+      "value": ""
+    },
+    {
+      "key": "doc_doc_type",
+      "value": ""
+    },
+    {
+      "key": "base_url_orch",
+      "value": "http://localhost:8003"
+    },
+    {
+      "key": "applicant_eid",
+      "value": "784198765432101"
+    },
+    {
+      "key": "full_name",
+      "value": "Mohammed Ali Alghentawi"
+    },
+    {
+      "key": "extracts_array_json",
+      "value": "[]"
+    }
+  ]
+}

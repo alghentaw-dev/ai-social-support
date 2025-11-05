@@ -1,0 +1,40 @@
+# Python / build
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual envs
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Env / secrets
+.env
+**/.env
+*.key
+*.pem
+
+# Data / caches
+.minio/
+.ollama/
+.redis-data/
+*.sqlite*
+*.db
+
+# Models / artifacts
+services/score/models/
+*.pkl
+*.joblib
+*.onnx
+
+# Node (if any)
+node_modules/
+
+# Docker
+*.log
